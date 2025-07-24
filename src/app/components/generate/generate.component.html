@@ -1,0 +1,526 @@
+<div class="generate-container">
+  <div class="generate-header">
+    <h1>Create String Art</h1>
+    <p>Transform your images into stunning string art patterns</p>
+  </div>
+
+  <div class="generate-content">
+    <!-- Step Navigation -->
+    <div class="step-navigation">
+      <div class="step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+        <div class="step-number">1</div>
+        <span class="step-label">Upload Image</span>
+      </div>
+      <div class="step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2">
+        <div class="step-number">2</div>
+        <span class="step-label">Configure Settings</span>
+      </div>
+      <div class="step" [class.active]="currentStep === 3" [class.completed]="currentStep > 3">
+        <div class="step-number">3</div>
+        <span class="step-label">Generate & Preview</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Image Upload -->
+    <div class="step-content" *ngIf="currentStep === 1">
+      <div class="upload-section">
+        <div class="upload-area" 
+             [class.dragover]="isDragOver"
+             [class.has-image]="selectedImage"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)"
+             (click)="fileInput.click()">
+          
+          <div class="upload-placeholder" *ngIf="!selectedImage">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7,10 12,15 17,10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <h3>Upload Your Image</h3>
+            <p>Drag and drop your image here, or click to browse</p>
+            <span class="file-types">Supports: JPG, PNG, WebP (Max 10MB)</span>
+          </div>
+
+          <div class="image-preview" *ngIf="selectedImage">
+            <img [src]="selectedImage" alt="Selected image" />
+            <div class="image-overlay">
+              <button class="change-image-btn" (click)="fileInput.click()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Change Image
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <input #fileInput type="file" 
+               accept="image/*" 
+               (change)="onFileSelected($event)"
+               style="display: none;" />
+
+        <div class="upload-options">
+          <div class="option-group">
+            <label class="option-label">
+              <input type="radio" name="imageSource" value="upload" [(ngModel)]="imageSource" />
+              <span class="radio-custom"></span>
+              Upload from device
+            </label>
+            <label class="option-label">
+              <input type="radio" name="imageSource" value="url" [(ngModel)]="imageSource" />
+              <span class="radio-custom"></span>
+              Use image URL
+            </label>
+          </div>
+
+          <div class="url-input" *ngIf="imageSource === 'url'">
+            <input type="url" 
+                   placeholder="Enter image URL" 
+                   [(ngModel)]="imageUrl"
+                   (blur)="loadImageFromUrl()" />
+            <button class="load-btn" (click)="loadImageFromUrl()">Load</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-primary" 
+                [disabled]="!selectedImage" 
+                (click)="nextStep()">
+          Continue to Settings
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Settings Configuration -->
+    <div class="step-content" *ngIf="currentStep === 2">
+      <div class="settings-section">
+        <div class="settings-grid">
+          <!-- Basic Settings -->
+          <div class="settings-group">
+            <h3>Basic Settings</h3>
+            
+            <div class="setting-item">
+              <label for="nailCount">Number of Nails</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="nailCount" 
+                       min="20" 
+                       max="200" 
+                       step="10"
+                       [(ngModel)]="settings.nailCount"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.nailCount }}</span>
+              </div>
+              <small>More nails = higher detail but longer processing time</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="stringCount">Number of Strings</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="stringCount" 
+                       min="100" 
+                       max="2000" 
+                       step="100"
+                       [(ngModel)]="settings.stringCount"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.stringCount }}</span>
+              </div>
+              <small>More strings = better coverage and detail</small>
+            </div>
+
+            <div class="setting-item">
+              <label for="algorithm">Algorithm</label>
+              <select id="algorithm" [(ngModel)]="settings.algorithm" (change)="updatePreview()">
+                <option value="greedy">Greedy (Fast)</option>
+                <option value="optimized">Optimized (Balanced)</option>
+                <option value="advanced">Advanced (Best Quality)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Visual Settings -->
+          <div class="settings-group">
+            <h3>Visual Settings</h3>
+            
+            <div class="setting-item">
+              <label for="stringColor">String Color</label>
+              <div class="color-input">
+                <input type="color" 
+                       id="stringColor" 
+                       [(ngModel)]="settings.stringColor"
+                       (change)="updatePreview()" />
+                <span class="color-preview" [style.background-color]="settings.stringColor"></span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label for="backgroundColor">Background Color</label>
+              <div class="color-input">
+                <input type="color" 
+                       id="backgroundColor" 
+                       [(ngModel)]="settings.backgroundColor"
+                       (change)="updatePreview()" />
+                <span class="color-preview" [style.background-color]="settings.backgroundColor"></span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label for="stringThickness">String Thickness</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="stringThickness" 
+                       min="1" 
+                       max="5" 
+                       step="0.5"
+                       [(ngModel)]="settings.stringThickness"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.stringThickness }}px</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label for="opacity">Opacity</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="opacity" 
+                       min="0.1" 
+                       max="1" 
+                       step="0.1"
+                       [(ngModel)]="settings.opacity"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ (settings.opacity * 100).toFixed(0) }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Settings -->
+          <div class="settings-group">
+            <h3>Advanced Settings</h3>
+            
+            <div class="setting-item">
+              <label for="contrast">Contrast Enhancement</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="contrast" 
+                       min="0" 
+                       max="2" 
+                       step="0.1"
+                       [(ngModel)]="settings.contrast"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.contrast }}</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label for="brightness">Brightness</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="brightness" 
+                       min="0" 
+                       max="2" 
+                       step="0.1"
+                       [(ngModel)]="settings.brightness"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.brightness }}</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label for="noiseReduction">Noise Reduction</label>
+              <div class="range-input">
+                <input type="range" 
+                       id="noiseReduction" 
+                       min="0" 
+                       max="1" 
+                       step="0.1"
+                       [(ngModel)]="settings.noiseReduction"
+                       (input)="updatePreview()" />
+                <span class="range-value">{{ settings.noiseReduction }}</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="settings.showNails" (change)="updatePreview()" />
+                <span class="checkmark"></span>
+                Show nail positions
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="settings.autoOptimize" (change)="updatePreview()" />
+                <span class="checkmark"></span>
+                Auto-optimize settings
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="preview-section">
+          <h3>Live Preview</h3>
+          <div class="preview-container">
+            <canvas #previewCanvas class="preview-canvas"></canvas>
+            <div class="preview-info">
+              <div class="info-item">
+                <span class="info-label">Estimated time:</span>
+                <span class="info-value">{{ getEstimatedTime() }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">File size:</span>
+                <span class="info-value">{{ getEstimatedSize() }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Quality score:</span>
+                <span class="info-value">{{ getQualityScore() }}/10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-secondary" (click)="previousStep()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
+          Back
+        </button>
+        <button class="btn btn-primary" (click)="nextStep()">
+          Generate String Art
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Generation and Preview -->
+    <div class="step-content" *ngIf="currentStep === 3">
+      <div class="generation-section">
+        <div class="generation-status" *ngIf="!generationComplete">
+          <div class="status-indicator">
+            <svg class="spinner" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+          </div>
+          <h3>Generating String Art...</h3>
+          <p>{{ generationStatus }}</p>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="generationProgress"></div>
+          </div>
+          <span class="progress-text">{{ generationProgress }}%</span>
+        </div>
+
+        <!-- Live Preview Canvas (always available) -->
+        <div class="live-preview-section" *ngIf="currentStep === 3">
+          <div class="live-preview-header">
+            <h3>Live Preview</h3>
+            <p>{{ generationStatus }}</p>
+          </div>
+          <div class="live-preview-content">
+            <canvas #resultCanvas class="result-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="result-section" *ngIf="generationComplete">
+          <div class="result-header">
+            <h3>String Art Generated Successfully!</h3>
+            <p>Your string art pattern is ready. Download the files below to create your physical string art.</p>
+          </div>
+
+          <div class="result-content">
+            <div class="result-preview">
+              <canvas #finalResultCanvas class="result-canvas"></canvas>
+              <div class="preview-controls">
+                <button class="control-btn" (click)="zoomIn()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="11" y1="8" x2="11" y2="14"/>
+                    <line x1="8" y1="11" x2="14" y2="11"/>
+                  </svg>
+                </button>
+                <button class="control-btn" (click)="zoomOut()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <line x1="8" y1="11" x2="14" y2="11"/>
+                  </svg>
+                </button>
+                <button class="control-btn" (click)="resetZoom()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 21v-5h5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="result-info">
+              <div class="info-card">
+                <h4>Project Details</h4>
+                <div class="detail-item">
+                  <span class="detail-label">Nails used:</span>
+                  <span class="detail-value">{{ resultData.nailCount }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Strings used:</span>
+                  <span class="detail-value">{{ resultData.stringCount }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Generation time:</span>
+                  <span class="detail-value">{{ resultData.generationTime }}s</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">File size:</span>
+                  <span class="detail-value">{{ resultData.fileSize }}</span>
+                </div>
+              </div>
+
+              <!-- Save Project Form -->
+              <div class="save-project-section">
+                <h4>Save Project</h4>
+                <div class="save-form">
+                  <div class="form-group">
+                    <label for="projectTitle">Project Title *</label>
+                    <input 
+                      type="text" 
+                      id="projectTitle" 
+                      [(ngModel)]="projectTitle" 
+                      placeholder="Enter project title"
+                      class="form-input" />
+                  </div>
+                  <div class="form-group">
+                    <label for="projectDescription">Description (Optional)</label>
+                    <textarea 
+                      id="projectDescription" 
+                      [(ngModel)]="projectDescription" 
+                      placeholder="Enter project description"
+                      class="form-textarea"
+                      rows="3"></textarea>
+                  </div>
+                  
+                  <!-- Save Status Messages -->
+                  <div class="save-status" *ngIf="saveSuccess || saveError">
+                    <div class="success-message" *ngIf="saveSuccess">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                      </svg>
+                      Project saved successfully!
+                    </div>
+                    <div class="error-message" *ngIf="saveError">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      {{ saveError }}
+                    </div>
+                  </div>
+                  
+                  <button 
+                    class="btn btn-primary save-btn" 
+                    (click)="saveProject()"
+                    [disabled]="isSaving || !projectTitle.trim()">
+                    <svg *ngIf="isSaving" class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                    </svg>
+                    <svg *ngIf="!isSaving" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17,21 17,13 7,13 7,21"/>
+                      <polyline points="7,3 7,8 15,8"/>
+                    </svg>
+                    {{ isSaving ? 'Saving...' : 'Save Project' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="download-section">
+                <h4>Download Files</h4>
+                <div class="action-buttons">
+                  <button class="btn btn-primary" (click)="downloadImage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Image (PNG)
+                  </button>
+                  <button class="btn btn-secondary" (click)="downloadSVG()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    Download SVG
+                  </button>
+                  <button class="btn btn-secondary" (click)="downloadCoordinates()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 11H1l8-8 8 8h-8v8z"/>
+                      <path d="M3 19h18"/>
+                    </svg>
+                    Download Coordinates
+                  </button>
+                  <button class="btn btn-secondary" (click)="downloadInstructions()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    Download Instructions
+                  </button>
+                </div>
+              </div>
+
+              <div class="action-buttons">
+                <button class="btn btn-outline" (click)="shareProject()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                  Share Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions" *ngIf="generationComplete">
+        <button class="btn btn-secondary" (click)="previousStep()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
+          Back to Settings
+        </button>
+        <button class="btn btn-primary" (click)="createNewProject()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create New Project
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 
