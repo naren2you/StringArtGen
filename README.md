@@ -119,3 +119,4 @@ string-art-generator/
   ]
 }
 
+# StringArtGen
